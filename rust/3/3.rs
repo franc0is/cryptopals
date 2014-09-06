@@ -17,6 +17,8 @@ fn score_for_char(c: char) -> int {
     'd' => 3,
     'l' => 2,
     'u' => 1,
+    x if x > 'z' => -99,
+    x if x < ' ' => -99,
     _ => 0,
   }
 }
