@@ -1,6 +1,6 @@
 fn print_hex(string: Vec<u8>) {
   for byte in string.iter() {
-    print!("{:x}", byte.clone());
+    print!("{:02x}", byte.clone());
   }
   print!("\n");
 }

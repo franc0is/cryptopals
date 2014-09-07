@@ -15,7 +15,7 @@ fn main() {
   }
 
   for byte in xored_bytes.iter() {
-    print!("{:x}", byte.clone());
+    print!("{:02x}", byte.clone());
   }
   print!("\n");
 }
