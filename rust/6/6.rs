@@ -6,8 +6,7 @@ fn hamming_distance(mut s1: Vec<u8>, mut s2: Vec<u8>) -> uint {
     loop {
       match (s1.pop(), s2.pop()) {
         (None, None) => break,
-        (None, Some(x)) => distance += ctpop8(x) as uint,
-        (Some(x), None) => distance += ctpop8(x) as uint,
+        (None, Some(x)) | (Some(x), None) => distance += ctpop8(x) as uint,
         (Some(x), Some(y)) => distance += ctpop8(x ^ y) as uint,
       }
     }
