@@ -1,16 +1,21 @@
 use std::intrinsics::ctpop8;
 
+fn popcount(byte: u8) -> uint {
+  unsafe { // all compiler intrinsics are unsafe :(
+    ctpop8(byte) as uint
+  }
+}
+
 fn hamming_distance(mut s1: Vec<u8>, mut s2: Vec<u8>) -> uint {
   let mut distance: uint = 0;
-  unsafe { // not sure why ctpop8 is unsafe...
-    loop {
-      match (s1.pop(), s2.pop()) {
-        (None, None) => break,
-        (None, Some(x)) | (Some(x), None) => distance += ctpop8(x) as uint,
-        (Some(x), Some(y)) => distance += ctpop8(x ^ y) as uint,
-      }
+  loop {
+    match (s1.pop(), s2.pop()) {
+      (None, None) => break,
+      (None, Some(x)) | (Some(x), None) => distance += popcount(x),
+      (Some(x), Some(y)) => distance += popcount(x ^ y)
     }
   }
+
   return distance;
 }
 
