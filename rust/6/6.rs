@@ -1,44 +1,85 @@
-use std::intrinsics::ctpop8;
-use std::int::parse_bytes;
+extern crate serialize;
+use serialize::base64::FromBase64;
 
-fn hamming_distance(mut s1: Vec<u8>, mut s2: Vec<u8>) -> uint {
+#[allow(dead_code)]
+fn print_hex(string: Vec<u8>) {
+  for byte in string.iter() {
+    print!("{:02x}", byte.clone());
+  }
+  print!("\n");
+}
+
+fn hamming_distance(s1: &[u8], s2: &[u8]) -> uint {
   let mut distance: uint = 0;
+  let mut it1 = s1.iter();
+  let mut it2 = s2.iter();
   loop {
-    match (s1.pop(), s2.pop()) {
+    match (it1.next(), it2.next()) {
       (None, None) => break,
       (None, Some(x)) | (Some(x), None) => distance += x.count_ones() as uint,
-      (Some(x), Some(y)) => distance += (x ^ y).count_ones() as uint
+      (Some(x), Some(y)) => distance += (*x ^ *y).count_ones() as uint
     }
   }
 
   return distance;
 }
 
-fn int_to_bytes(mut number: int) -> Vec<u8> {
-  let mut bytes: Vec<u8> = Vec::new();
-  while number > 0 {
-    bytes.push((number & 0xff) as u8);
-    number = number >> 8;
+fn find_keysize(bytes: Vec<u8>) -> uint {
+  let mut best_score: f32 = 99999.9;
+  let mut best_size: uint = 0;
+
+  // compare all combinations of the first 3 samples
+  for keysize in range(3u, 40u) {
+    if 4 * keysize > bytes.len() {
+      break;
+    }
+
+    let s1 = bytes.slice(0 * keysize, 1 * keysize - 1);
+    let s2 = bytes.slice(1 * keysize, 2 * keysize - 1);
+    let s3 = bytes.slice(2 * keysize, 3 * keysize - 1);
+    let s4 = bytes.slice(3 * keysize, 4 * keysize - 1);
+    let score: f32  = (hamming_distance(s1, s2) +
+                       hamming_distance(s1, s3) +
+                       hamming_distance(s1, s4) +
+                       hamming_distance(s2, s3) +
+                       hamming_distance(s2, s4) +
+                       hamming_distance(s3, s4))
+                       as f32 / 6.0 / keysize as f32;
+    if score < best_score {
+      // smaller is better
+      best_score = score;
+      best_size = keysize;
+    }
   }
 
-  return bytes;
+  return best_size;
 }
 
-fn base64_to_bytes(base64: &[u8]) -> Vec<u8> {
-  // 2 base 64 digits to 3 hex digits
-  let base64_chunks = base64.chunks(2);
-  let mut bytes: Vec<u8> = Vec::new();
-  for chunk in base64_chunks.clone() {
-    let value = parse_bytes(chunk, 64).unwrap();
-    bytes.push_all_move(int_to_bytes(value));
-  }
-  return bytes;
+fn test() {
+  // check that we didn't break the hamming distance
+  assert!(hamming_distance("this is a test".as_bytes(), "wokka wokka!!!".as_bytes()) == 37);
+
+  // check that we can find the key for a known dataset
+  let input: &[u8] = [0x0b, 0x36, 0x37, 0x27, 0x2a, 0x2b, 0x2e, 0x63, 0x62, 0x2c, 0x2e, 0x69,
+                      0x69, 0x2a, 0x23, 0x69, 0x3a, 0x2a, 0x3c, 0x63, 0x24, 0x20, 0x2d, 0x62,
+                      0x3d, 0x63, 0x34, 0x3c, 0x2a, 0x26, 0x22, 0x63, 0x24, 0x27, 0x27, 0x65,
+                      0x27, 0x2a, 0x28, 0x2b, 0x2f, 0x20, 0x43, 0x0a, 0x65, 0x2e, 0x2c, 0x65,
+                      0x2a, 0x31, 0x24, 0x33, 0x3a, 0x65, 0x3e, 0x2b, 0x20, 0x27, 0x63, 0x0c,
+                      0x69, 0x2b, 0x20, 0x28, 0x31, 0x65, 0x28, 0x63, 0x26, 0x30, 0x2e, 0x27,
+                      0x28, 0x2f];
+  assert!(find_keysize(Vec::from_slice(input)) == 3);
 }
 
 fn main() {
+  test();
   let args: Vec<String> = std::os::args();
-  let s1 = Vec::from_slice(args[1].as_bytes());
-  let s2 = Vec::from_slice(args[2].as_bytes());
-  let distance = hamming_distance(s1, s2);
-  println!("distance: {}", distance);
+  let input = args[1].as_bytes();
+  let bytes = input.from_base64().unwrap();
+  let keysize = find_keysize(bytes);
+  println!("{}", keysize);
 }
+
+
+
+
+
