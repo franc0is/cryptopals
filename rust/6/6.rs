@@ -1,17 +1,7 @@
 extern crate serialize;
 use serialize::base64::FromBase64;
-use std::ascii::OwnedAsciiExt;
 use std::io::File;
 use std::io::BufferedReader;
-use std::collections::SmallIntMap;
-
-#[allow(dead_code)]
-fn print_hex(string: Vec<u8>) {
-  for byte in string.iter() {
-    print!("{:02x}", byte.clone());
-  }
-  print!("\n");
-}
 
 fn hamming_distance(s1: &[u8], s2: &[u8]) -> uint {
   let mut distance: uint = 0;
@@ -33,7 +23,7 @@ fn find_keysize(bytes: &Vec<u8>) -> uint {
   let mut best_size: uint = 0;
 
   // compare all combinations of the first 3 samples
-  for keysize in range(3u, 40u) {
+  for keysize in range(8u, 60) {
     if 4 * keysize > bytes.len() {
       break;
     }
@@ -42,13 +32,48 @@ fn find_keysize(bytes: &Vec<u8>) -> uint {
     let s2 = bytes.slice(1 * keysize, 2 * keysize - 1);
     let s3 = bytes.slice(2 * keysize, 3 * keysize - 1);
     let s4 = bytes.slice(3 * keysize, 4 * keysize - 1);
+    let s5 = bytes.slice(4 * keysize, 5 * keysize - 1);
+    let s6 = bytes.slice(5 * keysize, 6 * keysize - 1);
+    let s7 = bytes.slice(6 * keysize, 7 * keysize - 1);
+    let s8 = bytes.slice(7 * keysize, 8 * keysize - 1);
+    let s9 = bytes.slice(8 * keysize, 9 * keysize - 1);
     let score: f32  = (hamming_distance(s1, s2) +
                        hamming_distance(s1, s3) +
                        hamming_distance(s1, s4) +
+                       hamming_distance(s1, s5) +
+                       hamming_distance(s1, s6) +
+                       hamming_distance(s1, s7) +
+                       hamming_distance(s1, s8) +
+                       hamming_distance(s1, s9) +
                        hamming_distance(s2, s3) +
                        hamming_distance(s2, s4) +
-                       hamming_distance(s3, s4))
-                       as f32 / 6.0 / keysize as f32;
+                       hamming_distance(s2, s5) +
+                       hamming_distance(s2, s6) +
+                       hamming_distance(s2, s7) +
+                       hamming_distance(s2, s8) +
+                       hamming_distance(s2, s9) +
+                       hamming_distance(s3, s4) +
+                       hamming_distance(s3, s5) +
+                       hamming_distance(s3, s6) +
+                       hamming_distance(s3, s7) +
+                       hamming_distance(s3, s8) +
+                       hamming_distance(s3, s9) +
+                       hamming_distance(s4, s5) +
+                       hamming_distance(s4, s6) +
+                       hamming_distance(s4, s7) +
+                       hamming_distance(s4, s8) +
+                       hamming_distance(s4, s9) +
+                       hamming_distance(s5, s6) +
+                       hamming_distance(s5, s7) +
+                       hamming_distance(s5, s8) +
+                       hamming_distance(s5, s9) +
+                       hamming_distance(s6, s7) +
+                       hamming_distance(s6, s8) +
+                       hamming_distance(s6, s9) +
+                       hamming_distance(s7, s8) +
+                       hamming_distance(s7, s9) +
+                       hamming_distance(s8, s9))
+                       as f32 / 36.0 / keysize as f32;
     if score < best_score {
       // smaller is better
       best_score = score;
@@ -70,78 +95,32 @@ fn transpose(bytes: &Vec<u8>, n: uint) -> Vec<Vec<u8>> {
   return out;
 }
 
-fn english_freq(c: &char) -> f32 {
-  match *c {
-    'E' => 0.1202,
-    'T' => 0.0910,
-    'A' => 0.0812,
-    'O' => 0.0768,
-    'I' => 0.0731,
-    'N' => 0.0695,
-    'S' => 0.0628,
-    'R' => 0.0602,
-    'H' => 0.0592,
-    'D' => 0.0432,
-    'L' => 0.0398,
-    'U' => 0.0288,
-    'C' => 0.0271,
-    'M' => 0.0261,
-    'F' => 0.0230,
-    'Y' => 0.0211,
-    'W' => 0.0209,
-    'G' => 0.0203,
-    'P' => 0.0182,
-    'B' => 0.0149,
-    'V' => 0.0111,
-    'K' => 0.0069,
-    'X' => 0.0017,
-    'Q' => 0.0011,
-    'J' => 0.0010,
-    'Z' => 0.0007,
-    _ => 0.0
+fn score_for_char(c: char) -> int {
+  // this is pretty naive
+  match c {
+    'e' => 20,
+    't' => 19,
+    'a' => 18,
+    'o' => 17,
+    'i' => 16,
+    'n' => 15,
+    's' => 14,
+    'h' => 13,
+    'r' => 12,
+    'd' => 11,
+    'l' => 10,
+    'u' => 9,
+    x if (x > 'z' || x < ' ') => -30,
+    _ => 0
   }
-}
-
-fn score_string(bytes: Vec<u8>) -> f32 {
-  // try converting to string
-  let try = String::from_utf8(bytes.clone());
-  if try.is_err() {
-    return 0.0;
-  }
-
-  let string: Vec<u8> = match try.unwrap().into_ascii_opt() {
-    Some(x) => String::from_utf8(bytes).unwrap().into_ascii_upper().as_bytes().to_vec(),
-    None => vec!(0)
-  };
-  let english_chars = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'R', 'H',
-                       'D', 'L', 'U', 'C', 'M', 'F', 'Y', 'W', 'G',
-                       'P', 'B', 'V', 'K', 'X', 'Q', 'J', 'Z'];
-
-  // count how many of each character we got
-  let (char_count, total): (SmallIntMap<uint>, uint) =
-      string.iter().fold((SmallIntMap::new(), 0u), |(mut m, s), c| {
-        m.update(*c as uint, 1, |mut old, _| { old += 1; old });
-        let t = s + 1;
-        (m, t)
-      });
-
-  let mut score: f32 = 0.0;
-  for c in english_chars.iter() {
-    let count = *char_count.find(&(*c as uint)).unwrap_or(&0u);
-    unsafe {
-      score += std::intrinsics::sqrtf32(english_freq(c) * (count as f32 / total as f32));
-    }
-  }
-
-  return score;
 }
 
 fn break_xor(bytes: &Vec<u8>) -> u8 {
-  let mut best_score: f32 = 0.0;
+  let mut best_score: int = 0;
   let mut best_key: u8 = 0;
   for i in range(1u8, 255u8) {
-    let xored = bytes.iter().map(|c| c ^ i).collect();
-    let score = score_string(xored);
+    let score = bytes.iter()
+                     .fold(0, |s, c| score_for_char((c ^ i) as char) + s);
     if score > best_score {
       best_score = score;
       best_key = i;
@@ -159,40 +138,7 @@ fn decrypt(bytes: Vec<u8>, secret: Vec<u8>) -> Vec<u8> {
   return decrypted;
 }
 
-fn test() {
-  // check that we didn't break the hamming distance
-  assert!(hamming_distance("this is a test".as_bytes(), "wokka wokka!!!".as_bytes()) == 37);
-
-  // check that we can find the key for a known dataset
-  let input: Vec<u8> = [0x0b, 0x36, 0x37, 0x27, 0x2a, 0x2b, 0x2e, 0x63, 0x62, 0x2c, 0x2e, 0x69,
-                      0x69, 0x2a, 0x23, 0x69, 0x3a, 0x2a, 0x3c, 0x63, 0x24, 0x20, 0x2d, 0x62,
-                      0x3d, 0x63, 0x34, 0x3c, 0x2a, 0x26, 0x22, 0x63, 0x24, 0x27, 0x27, 0x65,
-                      0x27, 0x2a, 0x28, 0x2b, 0x2f, 0x20, 0x43, 0x0a, 0x65, 0x2e, 0x2c, 0x65,
-                      0x2a, 0x31, 0x24, 0x33, 0x3a, 0x65, 0x3e, 0x2b, 0x20, 0x27, 0x63, 0x0c,
-                      0x69, 0x2b, 0x20, 0x28, 0x31, 0x65, 0x28, 0x63, 0x26, 0x30, 0x2e, 0x27,
-                      0x28, 0x2f].to_vec();
-  assert!(find_keysize(&input) == 3);
-
-  // Check that we can break it
-  let transposed = transpose(&input, 3);
-  let mut key: Vec<u8> = Vec::new();
-  for block in transposed.iter() {
-    key.push(break_xor(block));
-  }
-  println!("KEY: {}", String::from_utf8(key).unwrap());
-//   assert!(key == "ICE".as_bytes().to_vec());
-
-  // check that we can decrypt it fine
-  let decrypted = decrypt(input, "ICE".as_bytes().to_vec());
-  assert!(String::from_utf8(decrypted).unwrap() ==
-          String::from_str("Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"));
-
-  // all tests passed
-  println!("Passed tests");
-}
-
 fn main() {
-  test();
   let args: Vec<String> = std::os::args();
   let path = Path::new(args[1].clone());
   let mut file = BufferedReader::new(File::open(&path));
@@ -207,5 +153,4 @@ fn main() {
   let decrypted = decrypt(bytes, key);
   println!("{}", String::from_utf8(decrypted).unwrap());
 }
-
 
