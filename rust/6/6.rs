@@ -1,4 +1,5 @@
 extern crate serialize;
+//extern crate debug;
 use serialize::base64::FromBase64;
 
 #[allow(dead_code)]
@@ -55,6 +56,54 @@ fn find_keysize(bytes: Vec<u8>) -> uint {
   return best_size;
 }
 
+fn transpose(bytes: Vec<u8>, n: uint) -> Vec<Vec<u8>> {
+  let mut out: Vec<Vec<u8>> = Vec::new();
+  for i in range(0u, n) {
+    out.push(bytes.iter() // get an iterator
+               .enumerate() // get (position, value) paris
+               .filter_map(|(idx, val)| { if idx % n == i { Some(*val) } else { None } }) // filter and map based on index
+               .collect()); // collect the results into a new vector
+  }
+  return out;
+}
+
+fn score_for_char(c: char) -> int {
+  // this is pretty naive
+  match c {
+    'e' => 12,
+    't' => 11,
+    'a' => 10,
+    'o' => 9,
+    'i' => 8,
+    'n' => 7,
+    's' => 6,
+    'h' => 5,
+    'r' => 4,
+    'd' => 3,
+    'l' => 2,
+    'u' => 1,
+    x if x > 'z' => -99,
+    x if x < ' ' => -99,
+    _ => 0,
+  }
+}
+
+fn break_xor(bytes: &Vec<u8>) -> u8 {
+  let mut best_score: int = 0;
+  let mut best_key: u8 = 0;
+  for i in range(1u8, 255u8) {
+    let decoded: Vec<u8> = bytes.iter().map(|c| c ^ i).collect();
+    let score = decoded.iter().fold(0, |s, &c| score_for_char(c as char) + s);
+    let decoded_string = String::from_utf8(decoded);
+    if decoded_string.is_ok() && score > best_score {
+      best_score = score;
+      best_key = i;
+    }
+  }
+
+  return best_key;
+}
+
 fn test() {
   // check that we didn't break the hamming distance
   assert!(hamming_distance("this is a test".as_bytes(), "wokka wokka!!!".as_bytes()) == 37);
@@ -67,16 +116,30 @@ fn test() {
                       0x2a, 0x31, 0x24, 0x33, 0x3a, 0x65, 0x3e, 0x2b, 0x20, 0x27, 0x63, 0x0c,
                       0x69, 0x2b, 0x20, 0x28, 0x31, 0x65, 0x28, 0x63, 0x26, 0x30, 0x2e, 0x27,
                       0x28, 0x2f];
-  assert!(find_keysize(Vec::from_slice(input)) == 3);
+  assert!(find_keysize(input.to_vec()) == 3);
+
+  let transposed = transpose(input.to_vec(), 3);
+  for block in transposed.iter() {
+    println!("BLOCK");
+    print!(" [ ");
+    for byte in block.iter() {
+      print!("0x{:x}, ", *byte);
+    }
+    print!("]\n");
+    let key = break_xor(block);
+    println!("key is {} a.k.a 0x{:x}", key as char, key);
+  }
+  println!("Passed tests");
 }
 
 fn main() {
   test();
   let args: Vec<String> = std::os::args();
   let input = args[1].as_bytes();
-  let bytes = input.from_base64().unwrap();
-  let keysize = find_keysize(bytes);
-  println!("{}", keysize);
+  //let bytes = input.from_base64().unwrap();
+  let transposed = transpose(input.to_vec(), 2);
+  //let keysize = find_keysize(bytes);
+  //println!("{}", keysize);
 }
 
 

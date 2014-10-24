@@ -58,7 +58,7 @@ fn main() {
   let mut best_string: String = String::new();
   let mut best_score: int = 0;
   for line_iter in file.lines() {
-    let line: String = match line_iter { Ok(x) => x, Err(e) => fail!(e) };
+    let line: String = match line_iter { Some(x) => x, Err(e) => fail!(e) };
     let (string, score) = decrypt_string(line);
     if score > best_score {
       best_string = string;
