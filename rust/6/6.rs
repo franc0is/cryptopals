@@ -22,7 +22,7 @@ fn find_keysize(bytes: &Vec<u8>) -> uint {
   let mut best_score: f32 = 99999.9;
   let mut best_size: uint = 0;
 
-  // compare all combinations of the first 3 samples
+  // compare all combinations of the first 9 samples
   for keysize in range(8u, 60) {
     if 4 * keysize > bytes.len() {
       break;
