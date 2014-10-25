@@ -1,5 +1,3 @@
-#![feature(globs)]
-
 extern crate serialize;
 use serialize::base64::FromBase64;
 use std::io::File;
