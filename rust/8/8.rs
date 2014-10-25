@@ -20,7 +20,7 @@ fn main() {
   let path = Path::new(args[1].clone());
   let mut file = BufferedReader::new(File::open(&path));
   for (i, line_iter) in file.lines().enumerate() {
-    let input: Vec<u8> = match line_iter { Ok(x) => x, Err(e) => fail!(e) }.into_bytes();
+    let input: Vec<u8> = line_iter.unwrap().into_bytes();
     let bytes = input.as_slice().from_base64().unwrap();
     if is_aes_ecb(bytes) {
       println!("Found ECB at line {}", i);
