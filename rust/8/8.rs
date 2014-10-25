@@ -8,9 +8,9 @@ use std::collections::HashSet;
 
 fn is_aes_ecb(bytes: Vec<u8>) -> bool {
   let len = bytes.len() / 16;
-  let blocks = bytes.as_slice().chunks(16);
+  let mut blocks = bytes.as_slice().chunks(16);
   let mut set: HashSet<&[u8]> = HashSet::new();
-  for block in blocks.clone() {
+  for block in blocks {
     set.insert(block);
   }
 
