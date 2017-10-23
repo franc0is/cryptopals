@@ -1,13 +1,18 @@
-use std::io::File;
-use std::io::BufferedReader;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufRead;
+use std::env;
 
-fn chunk_to_u8(chunk: &[u8]) -> u8 {
-  let parsed = std::int::parse_bytes(chunk, 16);
-  let result = parsed.unwrap_or(0) as u8;
-  return result;
+fn hex_to_bytes(s: &String) -> Vec<u8> {
+  let mut bytes = Vec::new();
+  for i in 0 .. (s.len() / 2) {
+    let byte = u8::from_str_radix(&s[2*i .. 2*i+2], 16).unwrap();
+    bytes.push(byte);
+  }
+  return bytes;
 }
 
-fn score_char(c: char) -> int {
+fn score_char(c: char) -> i32 {
   // this is pretty naive
   match c {
     'e' => 12,
@@ -23,21 +28,18 @@ fn score_char(c: char) -> int {
     'l' => 2,
     'u' => 1,
     '\n' => 0,
-    x if x > 'z' => -99,
-    x if x < ' ' => -99,
+    x if x > 'z' => -10,
+    x if x < ' ' => -10,
     _ => 0,
   }
 }
 
-fn decrypt_string(s: String) -> (String, int) {
-  // 2 digits / byte
-  let hex_string = s.as_bytes();
-  let hex_chunks = hex_string.chunks(2);
-  let hex_bytes: Vec<u8> = hex_chunks.map(|chunk| chunk_to_u8(chunk)).collect();
+fn decrypt_string(s: String) -> (String, i32) {
+  let hex_bytes: Vec<u8> = hex_to_bytes(&s);
 
   let mut best_string: String = String::new();
-  let mut best_score: int = 0;
-  for i in range(1u8, 255u8) {
+  let mut best_score: i32 = 0;
+  for i in 1u8 .. 255u8 {
     let decoded: Vec<u8> = hex_bytes.iter().map(|c| c ^ i).collect();
     let score = decoded.iter().fold(0, |s, &c| score_char(c as char) + s);
     let decoded_string = String::from_utf8(decoded);
@@ -51,14 +53,13 @@ fn decrypt_string(s: String) -> (String, int) {
 }
 
 fn main() {
-  let args: Vec<String> = std::os::args();
-  let path = Path::new(args[1].clone());
-  let mut file = BufferedReader::new(File::open(&path));
+  let args: Vec<String> = env::args().collect();
+  let file = BufReader::new(File::open(&args[1]).unwrap());
 
   let mut best_string: String = String::new();
-  let mut best_score: int = 0;
+  let mut best_score: i32 = 0;
   for line_iter in file.lines() {
-    let line: String = match line_iter { Some(x) => x, Err(e) => fail!(e) };
+    let line = line_iter.unwrap();
     let (string, score) = decrypt_string(line);
     if score > best_score {
       best_string = string;
