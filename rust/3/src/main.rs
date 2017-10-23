@@ -1,8 +1,16 @@
-fn chunk_to_u8(chunk: &[u8]) -> u8 {
-  std::int::parse_bytes(chunk, 16).unwrap() as u8
+use std::env;
+use std::u8;
+
+fn hex_to_bytes(s: &String) -> Vec<u8> {
+  let mut bytes = Vec::new();
+  for i in 0 .. (s.len() / 2) {
+    let byte = u8::from_str_radix(&s[2*i .. 2*i+2], 16).unwrap();
+    bytes.push(byte);
+  }
+  return bytes;
 }
 
-fn score_for_char(c: char) -> int {
+fn score_for_char(c: char) -> i32 {
   // this is pretty naive
   match c {
     'e' => 12,
@@ -24,17 +32,14 @@ fn score_for_char(c: char) -> int {
 }
 
 fn main() {
-  let args: Vec<String> = std::os::args();
-  let hex_string = args[1].as_bytes();
-
-  // 2 digits / byte
-  let hex_chunks = hex_string.chunks(2);
-  let hex_bytes: Vec<u8> = hex_chunks.map(|chunk| chunk_to_u8(chunk)).collect();
+  let args: Vec<String> = env::args().collect();
+  let hex_string = &args[1];
+  let bytes = hex_to_bytes(hex_string);
 
   let mut best_string: String = String::new();
-  let mut best_score: int = 0;
-  for i in range(1u8, 255u8) {
-    let decoded: Vec<u8> = hex_bytes.iter().map(|c| c ^ i).collect();
+  let mut best_score: i32 = 0;
+  for i in 1u8 .. 255u8 {
+    let decoded: Vec<u8> = bytes.iter().map(|c| c ^ i).collect();
     let score = decoded.iter().fold(0, |s, &c| score_for_char(c as char) + s);
     let decoded_string = String::from_utf8(decoded);
     if decoded_string.is_ok() && score > best_score {
