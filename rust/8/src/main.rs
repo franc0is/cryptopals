@@ -29,9 +29,8 @@ fn hex_to_bytes(s: &String) -> Vec<u8> {
 fn main() {
   let args: Vec<String> = env::args().collect();
   let file = BufReader::new(File::open(&args[1]).unwrap());
-  for (i, line_iter) in file.lines().enumerate() {
-    let mut s = line_iter.unwrap();
-    let bytes: Vec<u8> = hex_to_bytes(&s);
+  for (i, line) in file.lines().enumerate() {
+    let bytes: Vec<u8> = hex_to_bytes(&line.unwrap());
     if is_aes_ecb(bytes) {
       println!("Found ECB at line {}", i);
     }
