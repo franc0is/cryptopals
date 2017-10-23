@@ -1,3 +1,5 @@
+use std::env;
+
 fn print_hex(string: Vec<u8>) {
   for byte in string.iter() {
     print!("{:02x}", byte.clone());
@@ -6,7 +8,7 @@ fn print_hex(string: Vec<u8>) {
 }
 
 fn main() {
-  let args: Vec<String> = std::os::args();
+  let args: Vec<String> = env::args().collect();
   let input: Vec<u8> = args[1].as_bytes().to_vec();
   let secret: Vec<u8> = args[2].as_bytes().to_vec();
 

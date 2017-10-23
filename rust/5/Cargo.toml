@@ -1,0 +1,7 @@
+[package]
+
+name = "cryptopals_1-5"
+version = "0.0.1"
+authors = [ "François Baldassari <hello@franc0is.com>" ]
+
+[dependencies]
