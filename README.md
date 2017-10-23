@@ -14,7 +14,7 @@ So Far:
   - [X] Challenge 7
   - [X] Challenge 8
 - [ ] Set 2
-  - [ ] Challenge 9
+  - [X] Challenge 9
   - [ ] Challenge 10
   - [ ] Challenge 11
   - [ ] Challenge 12

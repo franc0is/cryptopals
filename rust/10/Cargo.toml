@@ -1,0 +1,8 @@
+[package]
+name = "cryptopals_2-2"
+version = "0.1.0"
+authors = ["François Baldassari <francois.baldassari@oculus.com>"]
+
+[dependencies]
+openssl = "*"
+base64 = "*"
