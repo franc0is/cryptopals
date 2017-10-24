@@ -6,3 +6,4 @@ authors = ["François Baldassari <francois.baldassari@oculus.com>"]
 [dependencies]
 openssl = "*"
 base64 = "*"
+itertools = "*"
